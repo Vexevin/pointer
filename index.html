@@ -396,12 +396,15 @@ Through Jesus Christ. Amen.</p>
       <p class="ref" id="refText"></p>
       <p class="span" id="spanText"></p>
       <p class="hint" id="beenHere" hidden>You have been here before. Today is a new sitting.</p>
-      <p class="hint">Open this place in the Bible you have.</p>
+      <p class="hint">Open this place in the Bible you have. You may keep reading from here.</p>
       <p class="hint">This is a place to begin. If you need help understanding what you have read, ask a pastor or a trusted leader in a local church.</p>
       <div class="actions">
         <button class="choice" type="button" id="needWeb">I do not have a Bible here</button>
       </div>
       <div class="web-box" id="webBox" hidden></div>
+      <div class="actions" id="continueWrap" hidden>
+        <button class="choice" type="button" id="continueCh">Continue in this chapter</button>
+      </div>
       <p class="hint">Your notes stay on this phone.</p>
       <textarea id="note" placeholder="What this met in you"></textarea>
       <div class="actions">
@@ -471,7 +474,13 @@ function show(id) {
 
 function spanFor(p) {
   const end = Math.min(p.verse + WINDOW - 1, p.chapterLen);
-  return { start: p.verse, end };
+  return { start: p.verse, end, chapterLen: p.chapterLen };
+}
+
+function chapterLenOf(book, chapter) {
+  const b = BIBLE_INDEX.find(x => x.name === book);
+  if (!b) return chapter;
+  return b.verses[chapter - 1] || chapter;
 }
 
 function sample() {
@@ -570,6 +579,7 @@ function freeze() {
     chapter: p.chapter,
     verse: p.verse,
     end: span.end,
+    chapterLen: p.chapterLen,
     at: new Date().toISOString(),
     note: "",
     prior
@@ -581,20 +591,22 @@ function freeze() {
 function paintReveal() {
   document.getElementById("refText").textContent =
     frozen.book + " " + frozen.chapter + ":" + frozen.verse;
-  document.getElementById("spanText").textContent =
-    frozen.end === frozen.verse ? "" : ("Read through verse " + frozen.end);
+  document.getElementById("spanText").textContent = "Begin here.";
   document.getElementById("beenHere").hidden = !(frozen.prior > 0);
   document.getElementById("note").value = frozen.note || "";
   document.getElementById("webBox").hidden = true;
   document.getElementById("webBox").innerHTML = "";
+  document.getElementById("continueWrap").hidden = true;
 }
 
-async function loadWeb() {
+async function loadWeb(throughEnd) {
   const box = document.getElementById("webBox");
+  const last = chapterLenOf(frozen.book, frozen.chapter);
+  const end = throughEnd ? last : frozen.end;
   box.hidden = false;
   box.innerHTML = "<p class='cite'>World English Bible — public domain</p><p>Loading…</p>";
   const q = encodeURIComponent(frozen.book + " " + frozen.chapter + ":" + frozen.verse +
-    (frozen.end !== frozen.verse ? "-" + frozen.end : ""));
+    (end !== frozen.verse ? "-" + end : ""));
   try {
     const res = await fetch("https://bible-api.com/" + q + "?translation=web");
     if (!res.ok) throw new Error("lookup failed");
@@ -604,8 +616,11 @@ async function loadWeb() {
     ).join("");
     box.innerHTML = "<p class='cite'>World English Bible — public domain</p>" +
       (lines || "<p>" + (data.text || "").trim() + "</p>");
+    const more = !throughEnd && last > end;
+    document.getElementById("continueWrap").hidden = !more;
   } catch (err) {
     box.innerHTML = "<p class='cite'>World English Bible</p><p>The address still stands. The text could not be retrieved offline. Open the book when you can, or try again with a connection.</p>";
+    document.getElementById("continueWrap").hidden = true;
   }
 }
 
@@ -739,7 +754,8 @@ document.getElementById("crossBtn").addEventListener("click", () => {
   show("confirm");
 });
 
-document.getElementById("needWeb").addEventListener("click", loadWeb);
+document.getElementById("needWeb").addEventListener("click", () => loadWeb(false));
+document.getElementById("continueCh").addEventListener("click", () => loadWeb(true));
 
 document.getElementById("saveNote").addEventListener("click", () => {
   if (!frozen) return;
