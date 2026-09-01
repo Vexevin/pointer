@@ -279,6 +279,34 @@
   }
   .cal .dow { font-size: 10px; letter-spacing: .06em; text-transform: uppercase; }
   .tabs { display: flex; gap: 16px; }
+  .modal {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(10,9,8,.82);
+    z-index: 20;
+    padding: 28px;
+    align-items: center;
+    justify-content: center;
+  }
+  .modal.on { display: flex; }
+  .modal-card {
+    background: var(--bg-2);
+    border: 1px solid var(--line);
+    border-radius: 16px;
+    padding: 22px 20px;
+    max-width: 360px;
+    width: 100%;
+    text-align: center;
+  }
+  .modal-card img {
+    width: 220px;
+    height: 220px;
+    background: #fff;
+    border-radius: 8px;
+    margin: 14px auto;
+    display: block;
+  }
 </style>
 </head>
 <body>
@@ -392,7 +420,7 @@ Through Jesus Christ. Amen.</p>
       </div>
     </section>
 
-    <section class="screen" id="s-reveal">
+    <section class="screen scroll" id="s-reveal">
       <p class="ref" id="refText"></p>
       <p class="span" id="spanText"></p>
       <p class="hint" id="beenHere" hidden>You have been here before. Today is a new sitting.</p>
@@ -410,6 +438,7 @@ Through Jesus Christ. Amen.</p>
       <div class="actions">
         <button class="primary" type="button" id="saveNote">Keep these words</button>
         <button class="choice" type="button" id="saveCard">Save a card</button>
+        <button class="choice" type="button" id="shareApp">Share this app</button>
         <button class="choice" type="button" data-go="helperQ">Begin again</button>
       </div>
     </section>
@@ -443,6 +472,18 @@ Through Jesus Christ. Amen.</p>
         <button class="choice" type="button" data-go="helperQ">Return</button>
       </div>
     </section>
+  </div>
+
+  <div class="modal" id="qrModal" role="dialog" aria-label="Share">
+    <div class="modal-card">
+      <h1>A door for someone else</h1>
+      <p class="hint">They scan this with their camera. No number is needed.</p>
+      <img id="qrImg" alt="QR code for Pointer">
+      <p class="hint" id="qrLink">https://vexevin.github.io/pointer/</p>
+      <div class="actions">
+        <button class="primary" type="button" id="closeQr">Close</button>
+      </div>
+    </div>
   </div>
 
 <script>
@@ -887,6 +928,21 @@ async function saveCard() {
 }
 
 document.getElementById("saveCard").addEventListener("click", saveCard);
+
+const APP_LINK = "https://vexevin.github.io/pointer/";
+document.getElementById("shareApp").addEventListener("click", () => {
+  const url = encodeURIComponent(APP_LINK);
+  document.getElementById("qrImg").src =
+    "https://api.qrserver.com/v1/create-qr-code/?size=240x240&margin=8&data=" + url;
+  document.getElementById("qrLink").textContent = APP_LINK;
+  document.getElementById("qrModal").classList.add("on");
+});
+document.getElementById("closeQr").addEventListener("click", () => {
+  document.getElementById("qrModal").classList.remove("on");
+});
+document.getElementById("qrModal").addEventListener("click", (e) => {
+  if (e.target.id === "qrModal") document.getElementById("qrModal").classList.remove("on");
+});
 
 document.getElementById("shelfBtn").addEventListener("click", () => {
   renderJournal();

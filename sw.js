@@ -1,4 +1,4 @@
-const CACHE = "pointer-v1";
+const CACHE = "pointer-v2";
 const CORE = ["./", "./index.html", "./manifest.json", "./icon.svg"];
 
 self.addEventListener("install", (e) => {
