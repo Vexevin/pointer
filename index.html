@@ -1,0 +1,936 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#12110f">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
+<meta name="apple-mobile-web-app-title" content="Pointer">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon.svg">
+<link rel="icon" type="image/svg+xml" href="icon.svg">
+<title>Pointer</title>
+<style>
+  :root {
+    --bg: #12110f;
+    --bg-2: #1a1814;
+    --ink: #e8e2d6;
+    --muted: #a89f8e;
+    --gold: #d4b56a;
+    --gold-soft: #c4a45a;
+    --line: rgba(232,226,214,.14);
+    --btn: #2a261f;
+  }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body {
+    margin: 0; height: 100%;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
+  }
+  body {
+    min-height: 100dvh;
+    display: flex;
+    flex-direction: column;
+  }
+  .app {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    padding: calc(28px + env(safe-area-inset-top)) 28px calc(28px + env(safe-area-inset-bottom));
+    max-width: 440px;
+    width: 100%;
+    margin: 0 auto;
+  }
+  header {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    min-height: 28px;
+    margin-bottom: 8px;
+  }
+  header span {
+    font-family: ui-sans-serif, system-ui, sans-serif;
+    font-size: 11px;
+    letter-spacing: .16em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+  button.link {
+    background: none; border: 0; color: var(--muted);
+    font-family: ui-sans-serif, system-ui, sans-serif;
+    font-size: 12px; letter-spacing: .08em;
+    text-transform: uppercase; padding: 8px 0; cursor: pointer;
+  }
+  .screen {
+    flex: 1;
+    display: none;
+    flex-direction: column;
+    justify-content: center;
+    gap: 22px;
+  }
+  .screen.on { display: flex; }
+  .screen.scroll {
+    justify-content: flex-start;
+    overflow: auto;
+    padding-bottom: 8px;
+  }
+  h1 {
+    font-weight: 400;
+    font-size: 1.55rem;
+    line-height: 1.35;
+    margin: 0;
+  }
+  p, .prayer {
+    margin: 0;
+    color: var(--muted);
+    line-height: 1.55;
+    font-size: 1.05rem;
+  }
+  .prayer {
+    color: var(--ink);
+    white-space: pre-line;
+    font-size: 1.12rem;
+    line-height: 1.7;
+  }
+  .hint { font-size: .92rem; color: var(--muted); }
+  .actions { display: flex; flex-direction: column; gap: 10px; margin-top: 8px; }
+  button.choice, button.primary {
+    appearance: none;
+    border: 1px solid var(--line);
+    background: var(--btn);
+    color: var(--ink);
+    font-family: ui-sans-serif, system-ui, sans-serif;
+    font-size: 15px;
+    letter-spacing: .04em;
+    padding: 16px 18px;
+    border-radius: 14px;
+    cursor: pointer;
+  }
+  button.primary { border-color: rgba(212,181,106,.35); color: var(--gold); }
+  button.choice:active, button.primary:active { transform: scale(.99); }
+  .wait-wrap {
+    align-items: center;
+    text-align: center;
+  }
+  .breath {
+    width: 12px; height: 12px; border-radius: 50%;
+    background: var(--gold);
+    opacity: .35;
+    animation: pulse 2.4s ease-in-out infinite;
+  }
+  @keyframes pulse {
+    0%, 100% { transform: scale(.8); opacity: .25; }
+    50% { transform: scale(1.15); opacity: .7; }
+  }
+  .stage {
+    position: relative;
+    width: min(72vw, 280px);
+    height: min(72vw, 280px);
+    margin: 12px auto 0;
+    display: grid;
+    place-items: center;
+  }
+  .clouds, .clouds:before, .clouds:after {
+    position: absolute; inset: -8%;
+    border-radius: 50%;
+    background:
+      radial-gradient(circle at 30% 40%, rgba(210,200,180,.16), transparent 42%),
+      radial-gradient(circle at 70% 60%, rgba(180,190,210,.12), transparent 46%),
+      radial-gradient(circle at 50% 80%, rgba(200,180,150,.1), transparent 40%);
+    filter: blur(8px);
+    animation: drift 28s linear infinite;
+  }
+  .clouds:before {
+    content: "";
+    animation-duration: 40s;
+    animation-direction: reverse;
+    opacity: .7;
+  }
+  .clouds:after {
+    content: "";
+    animation-duration: 52s;
+    opacity: .5;
+  }
+  @keyframes drift {
+    from { transform: rotate(0deg) scale(1); }
+    to { transform: rotate(360deg) scale(1.05); }
+  }
+  .cross-btn {
+    position: relative;
+    width: 168px; height: 168px;
+    border-radius: 50%;
+    border: 1px solid rgba(212,181,106,.4);
+    background: radial-gradient(circle at 50% 42%, #2b271f, #161410 72%);
+    box-shadow: 0 0 0 1px rgba(0,0,0,.4), 0 0 48px rgba(212,181,106,.12);
+    cursor: pointer;
+    display: grid;
+    place-items: center;
+  }
+  .cross {
+    width: 54px; height: 54px;
+    position: relative;
+    filter: drop-shadow(0 0 10px rgba(212,181,106,.55));
+  }
+  .cross:before, .cross:after {
+    content: "";
+    position: absolute;
+    background: var(--gold);
+    border-radius: 2px;
+  }
+  .cross:before { width: 12px; height: 54px; left: 21px; top: 0; }
+  .cross:after { width: 38px; height: 12px; left: 8px; top: 16px; }
+  .ref {
+    font-size: 2rem;
+    letter-spacing: .02em;
+    text-align: center;
+    margin: 0;
+  }
+  .span {
+    text-align: center;
+    color: var(--gold-soft);
+    font-family: ui-sans-serif, system-ui, sans-serif;
+    font-size: 13px;
+    letter-spacing: .12em;
+    text-transform: uppercase;
+  }
+  .web-box {
+    border-top: 1px solid var(--line);
+    padding-top: 16px;
+    max-height: 36vh;
+    overflow: auto;
+  }
+  .web-box p { color: var(--ink); font-size: 1.05rem; margin: 0 0 10px; }
+  .web-box .cite {
+    font-size: 12px;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 12px;
+    font-family: ui-sans-serif, system-ui, sans-serif;
+  }
+  textarea {
+    width: 100%;
+    min-height: 120px;
+    resize: vertical;
+    background: var(--bg-2);
+    color: var(--ink);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: 14px;
+    font-family: inherit;
+    font-size: 1rem;
+    line-height: 1.5;
+  }
+  .journal-list { display: flex; flex-direction: column; gap: 14px; overflow: auto; }
+  .entry {
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: 14px;
+    background: var(--bg-2);
+  }
+  .entry strong { display: block; font-weight: 400; margin-bottom: 6px; }
+  .entry time, .entry .empty {
+    font-family: ui-sans-serif, system-ui, sans-serif;
+    font-size: 11px;
+    color: var(--muted);
+    letter-spacing: .06em;
+  }
+  .entry p { margin-top: 8px; color: var(--ink); font-size: .98rem; }
+  input[type="text"], select {
+    width: 100%;
+    background: var(--bg-2);
+    color: var(--ink);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: 14px;
+    font-family: inherit;
+    font-size: 1rem;
+  }
+  .row {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+  }
+  .row > * { flex: 1; }
+  .cal {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 4px;
+    font-family: ui-sans-serif, system-ui, sans-serif;
+    font-size: 12px;
+  }
+  .cal span, .cal button {
+    aspect-ratio: 1;
+    display: grid;
+    place-items: center;
+    border: 0;
+    background: transparent;
+    color: var(--muted);
+    padding: 0;
+  }
+  .cal button.has {
+    color: var(--gold);
+    border: 1px solid rgba(212,181,106,.35);
+    border-radius: 8px;
+    background: var(--btn);
+    cursor: pointer;
+  }
+  .cal .dow { font-size: 10px; letter-spacing: .06em; text-transform: uppercase; }
+  .tabs { display: flex; gap: 16px; }
+</style>
+</head>
+<body>
+  <div class="app">
+    <header>
+      <span id="mark"></span>
+      <span>
+        <button class="link" id="shelfBtn" type="button" hidden>Shelf</button>
+        <button class="link" id="whoBtn" type="button" hidden>Profiles</button>
+      </span>
+    </header>
+
+    <section class="screen on scroll" id="s-intro">
+      <h1>Before you begin</h1>
+      <p>This app is an entry point to Scripture. It is meant only to remove that first barrier: not knowing where to begin. It is for reading and reflection.</p>
+      <p>After prayer, the timing of your finger names a place in the Bible. Open that place and read.</p>
+      <div class="actions">
+        <button class="primary" type="button" id="introContinue">I understand</button>
+      </div>
+    </section>
+
+    <section class="screen" id="s-profiles">
+      <h1>Whose shelf?</h1>
+      <p>A name on this device only. No account. Notes stay with the name you open.</p>
+      <div class="actions" id="profileList"></div>
+      <div class="actions">
+        <button class="choice" type="button" data-go="profileNew">Add a name</button>
+      </div>
+    </section>
+
+    <section class="screen" id="s-profileNew">
+      <h1>A name for this shelf</h1>
+      <p class="hint">Use whatever you are called here. It never leaves this device.</p>
+      <input type="text" id="newName" maxlength="40" placeholder="Name" autocomplete="off">
+      <div class="actions">
+        <button class="primary" type="button" id="saveProfile">Keep this name</button>
+        <button class="choice" type="button" data-go="profiles">Back</button>
+      </div>
+    </section>
+
+    <section class="screen" id="s-helperQ">
+      <h1>Would you like a prayer helper?</h1>
+      <p>You may pray in your own words, or use these if you need a place to begin.</p>
+      <div class="actions">
+        <button class="primary" type="button" data-go="helper">Yes</button>
+        <button class="choice" type="button" data-go="ready">No</button>
+      </div>
+    </section>
+
+    <section class="screen" id="s-helper">
+      <p class="hint">A place to begin</p>
+      <p class="prayer">Lord,
+I am here.
+I do not know which words I need.
+Teach me to wait on Your timing.
+When it is time, give me the courage to stop,
+and the humility to receive whatever You set before me.
+Through Jesus Christ. Amen.</p>
+      <p class="hint">You may end in your own way.</p>
+      <div class="actions">
+        <button class="primary" type="button" data-go="ready">Continue</button>
+      </div>
+    </section>
+
+    <section class="screen" id="s-ready">
+      <h1>Are you ready to begin?</h1>
+      <p>The place will not be chosen until your finger meets the cross.</p>
+      <div class="actions">
+        <button class="primary" type="button" data-go="wait">Yes</button>
+        <button class="choice" type="button" data-go="notyet">Not yet</button>
+      </div>
+    </section>
+
+    <section class="screen wait-wrap" id="s-notyet">
+      <h1>There is no hurry.</h1>
+      <p>Remain as long as you need. The clock has not started.</p>
+      <div class="actions" style="width:100%">
+        <button class="primary" type="button" data-go="wait">I am ready</button>
+      </div>
+    </section>
+
+    <section class="screen wait-wrap" id="s-wait">
+      <div class="breath" aria-hidden="true"></div>
+      <p>Wait.</p>
+    </section>
+
+    <section class="screen wait-wrap" id="s-cross">
+      <p class="hint">When it is time</p>
+      <div class="stage">
+        <div class="clouds" aria-hidden="true"></div>
+        <button class="cross-btn" id="crossBtn" type="button" aria-label="Stop">
+          <span class="cross"></span>
+        </button>
+      </div>
+    </section>
+
+    <section class="screen" id="s-confirm">
+      <h1>Are you ready to read what God is bringing to your attention?</h1>
+      <p class="hint" id="heldRef"></p>
+      <div class="actions">
+        <button class="primary" type="button" data-go="reveal">Accept</button>
+        <button class="choice" type="button" data-go="hold">Not yet</button>
+      </div>
+    </section>
+
+    <section class="screen" id="s-hold">
+      <h1>The place is kept.</h1>
+      <p>It will not change. Open it when you are ready.</p>
+      <div class="actions">
+        <button class="primary" type="button" data-go="reveal">Read now</button>
+      </div>
+    </section>
+
+    <section class="screen" id="s-reveal">
+      <p class="ref" id="refText"></p>
+      <p class="span" id="spanText"></p>
+      <p class="hint" id="beenHere" hidden>You have been here before. Today is a new sitting.</p>
+      <p class="hint">Open this place in the Bible you have.</p>
+      <p class="hint">This is a place to begin. If you need help understanding what you have read, ask a pastor or a trusted leader in a local church.</p>
+      <div class="actions">
+        <button class="choice" type="button" id="needWeb">I do not have a Bible here</button>
+      </div>
+      <div class="web-box" id="webBox" hidden></div>
+      <p class="hint">Your notes stay on this phone.</p>
+      <textarea id="note" placeholder="What this met in you"></textarea>
+      <div class="actions">
+        <button class="primary" type="button" id="saveNote">Keep these words</button>
+        <button class="choice" type="button" id="saveCard">Save a card</button>
+        <button class="choice" type="button" data-go="helperQ">Begin again</button>
+      </div>
+    </section>
+
+    <section class="screen scroll" id="s-notes">
+      <h1>Shelf</h1>
+      <p class="hint" id="shelfHint">These notes do not leave this device.</p>
+      <div class="tabs">
+        <button class="link" type="button" id="tabList">List</button>
+        <button class="link" type="button" id="tabCal">Days</button>
+      </div>
+      <div id="listPane">
+        <input type="text" id="find" placeholder="Find a book or place" autocomplete="off">
+        <select id="sortBy">
+          <option value="newest">Newest first</option>
+          <option value="oldest">Oldest first</option>
+          <option value="book">By book</option>
+        </select>
+        <div class="journal-list" id="journal"></div>
+      </div>
+      <div id="calPane" hidden>
+        <div class="row">
+          <button class="choice" type="button" id="prevMonth">Prev</button>
+          <p class="hint" id="calTitle" style="text-align:center"></p>
+          <button class="choice" type="button" id="nextMonth">Next</button>
+        </div>
+        <div class="cal" id="cal"></div>
+        <div class="journal-list" id="dayList"></div>
+      </div>
+      <div class="actions">
+        <button class="choice" type="button" data-go="helperQ">Return</button>
+      </div>
+    </section>
+  </div>
+
+<script>
+const BIBLE_INDEX = [{"name":"Genesis","abbr":"Gen","verses":[31,25,24,26,32,22,24,22,29,32,32,20,18,24,21,16,27,33,38,18,34,24,20,67,34,35,46,22,35,43,55,32,20,31,29,43,36,30,23,23,57,38,34,34,28,34,31,22,33,26]},{"name":"Exodus","abbr":"Exod","verses":[22,25,22,31,23,30,25,32,35,29,10,51,22,31,27,36,16,27,25,26,36,31,33,18,40,37,21,43,46,38,18,35,23,35,35,38,29,31,43,38]},{"name":"Leviticus","abbr":"Lev","verses":[17,16,17,35,19,30,38,36,24,20,47,8,59,57,33,34,16,30,37,27,24,33,44,23,55,46,34]},{"name":"Numbers","abbr":"Num","verses":[54,34,51,49,31,27,89,26,23,36,35,16,33,45,41,50,13,32,22,29,35,41,30,25,18,65,23,31,40,16,54,42,56,29,34,13]},{"name":"Deuteronomy","abbr":"Deut","verses":[46,37,29,49,33,25,26,20,29,22,32,32,18,29,23,22,20,22,21,20,23,30,25,22,19,19,26,68,29,20,30,52,29,12]},{"name":"Joshua","abbr":"Josh","verses":[18,24,17,24,15,27,26,35,27,43,23,24,33,15,63,10,18,28,51,9,45,34,16,33]},{"name":"Judges","abbr":"Judg","verses":[36,23,31,24,31,40,25,35,57,18,40,15,25,20,20,31,13,31,30,48,25]},{"name":"Ruth","abbr":"Ruth","verses":[22,23,18,22]},{"name":"1 Samuel","abbr":"1Sam","verses":[28,36,21,22,12,21,17,22,27,27,15,25,23,52,35,23,58,30,24,42,15,23,29,22,44,25,12,25,11,31,13]},{"name":"2 Samuel","abbr":"2Sam","verses":[27,32,39,12,25,23,29,18,13,19,27,31,39,33,37,23,29,33,43,26,22,51,39,25]},{"name":"1 Kings","abbr":"1Kgs","verses":[53,46,28,34,18,38,51,66,28,29,43,33,34,31,34,34,24,46,21,43,29,53]},{"name":"2 Kings","abbr":"2Kgs","verses":[18,25,27,44,27,33,20,29,37,36,21,21,25,29,38,20,41,37,37,21,26,20,37,20,30]},{"name":"1 Chronicles","abbr":"1Chr","verses":[54,55,24,43,26,81,40,40,44,14,47,40,14,17,29,43,27,17,19,8,30,19,32,31,31,32,34,21,30]},{"name":"2 Chronicles","abbr":"2Chr","verses":[17,18,17,22,14,42,22,18,31,19,23,16,22,15,19,14,19,34,11,37,20,12,21,27,28,23,9,27,36,27,21,33,25,33,27,23]},{"name":"Ezra","abbr":"Ezra","verses":[11,70,13,24,17,22,28,36,15,44]},{"name":"Nehemiah","abbr":"Neh","verses":[11,20,32,23,19,19,73,18,38,39,36,47,31]},{"name":"Esther","abbr":"Esth","verses":[22,23,15,17,14,14,10,17,32,3]},{"name":"Job","abbr":"Job","verses":[22,13,26,21,27,30,21,22,35,22,20,25,28,22,35,22,16,21,29,29,34,30,17,25,6,14,23,28,25,31,40,22,33,37,16,33,24,41,30,24,34,17]},{"name":"Psalm","abbr":"Ps","verses":[6,12,8,8,12,10,17,9,20,18,7,8,6,7,5,11,15,50,14,9,13,31,6,10,22,12,14,9,11,12,24,11,22,22,28,12,40,22,13,17,13,11,5,26,17,11,9,14,20,23,19,9,6,7,23,13,11,11,17,12,8,12,11,10,13,20,7,35,36,5,24,20,28,23,10,12,20,72,13,19,16,8,18,12,13,17,7,18,52,17,16,15,5,23,11,13,12,9,9,5,8,28,22,35,45,48,43,13,31,7,10,10,9,8,18,19,2,29,176,7,8,9,4,8,5,6,5,6,8,8,3,18,3,3,21,26,9,8,24,13,10,7,12,15,21,10,20,14,9,6]},{"name":"Proverbs","abbr":"Prov","verses":[33,22,35,27,23,35,27,36,18,32,31,28,25,35,33,33,28,24,29,30,31,29,35,34,28,28,27,28,27,33,31]},{"name":"Ecclesiastes","abbr":"Eccl","verses":[18,26,22,16,20,12,29,17,18,20,10,14]},{"name":"Song of Solomon","abbr":"Song","verses":[17,17,11,16,16,13,13,14]},{"name":"Isaiah","abbr":"Isa","verses":[31,22,26,6,30,13,25,22,21,34,16,6,22,32,9,14,14,7,25,6,17,25,18,23,12,21,13,29,24,33,9,20,24,17,10,22,38,22,8,31,29,25,28,28,25,13,15,22,26,11,23,15,12,17,13,12,21,14,21,22,11,12,19,12,25,24]},{"name":"Jeremiah","abbr":"Jer","verses":[19,37,25,31,31,30,34,22,26,25,23,17,27,22,21,21,27,23,15,18,14,30,40,10,38,24,22,17,32,24,40,44,26,22,19,32,21,28,18,16,18,22,13,30,5,28,7,47,39,46,64,34]},{"name":"Lamentations","abbr":"Lam","verses":[22,22,66,22,22]},{"name":"Ezekiel","abbr":"Ezek","verses":[28,10,27,17,17,14,27,18,11,22,25,28,23,23,8,63,24,32,14,49,32,31,49,27,17,21,36,26,21,26,18,32,33,31,15,38,28,23,29,49,26,20,27,31,25,24,23,35]},{"name":"Daniel","abbr":"Dan","verses":[21,49,30,37,31,28,28,27,27,21,45,13]},{"name":"Hosea","abbr":"Hos","verses":[11,23,5,19,15,11,16,14,17,15,12,14,16,9]},{"name":"Joel","abbr":"Joel","verses":[20,32,21]},{"name":"Amos","abbr":"Amos","verses":[15,16,15,13,27,14,17,14,15]},{"name":"Obadiah","abbr":"Obad","verses":[21]},{"name":"Jonah","abbr":"Jonah","verses":[17,10,10,11]},{"name":"Micah","abbr":"Mic","verses":[16,13,12,13,15,16,20]},{"name":"Nahum","abbr":"Nah","verses":[15,13,19]},{"name":"Habakkuk","abbr":"Hab","verses":[17,20,19]},{"name":"Zephaniah","abbr":"Zeph","verses":[18,15,20]},{"name":"Haggai","abbr":"Hag","verses":[15,23]},{"name":"Zechariah","abbr":"Zech","verses":[21,13,10,14,11,15,14,23,17,12,17,14,9,21]},{"name":"Malachi","abbr":"Mal","verses":[14,17,18,6]},{"name":"Matthew","abbr":"Matt","verses":[25,23,17,25,48,34,29,34,38,42,30,50,58,36,39,28,27,35,30,34,46,46,39,51,46,75,66,20]},{"name":"Mark","abbr":"Mark","verses":[45,28,35,41,43,56,37,38,50,52,33,44,37,72,47,20]},{"name":"Luke","abbr":"Luke","verses":[80,52,38,44,39,49,50,56,62,42,54,59,35,35,32,31,37,43,48,47,38,71,56,53]},{"name":"John","abbr":"John","verses":[51,25,36,54,47,71,53,59,41,42,57,50,38,31,27,33,26,40,42,31,25]},{"name":"Acts","abbr":"Acts","verses":[26,47,26,37,42,15,60,40,43,48,30,25,52,28,41,40,34,28,41,38,40,30,35,27,27,32,44,31]},{"name":"Romans","abbr":"Rom","verses":[32,29,31,25,21,23,25,39,33,21,36,21,14,23,33,27]},{"name":"1 Corinthians","abbr":"1Cor","verses":[31,16,23,21,13,20,40,13,27,33,34,31,13,40,58,24]},{"name":"2 Corinthians","abbr":"2Cor","verses":[24,17,18,18,21,18,16,24,15,18,33,21,14]},{"name":"Galatians","abbr":"Gal","verses":[24,21,29,31,26,18]},{"name":"Ephesians","abbr":"Eph","verses":[23,22,21,32,33,24]},{"name":"Philippians","abbr":"Phil","verses":[30,30,21,23]},{"name":"Colossians","abbr":"Col","verses":[29,23,25,18]},{"name":"1 Thessalonians","abbr":"1Thess","verses":[10,20,13,18,28]},{"name":"2 Thessalonians","abbr":"2Thess","verses":[12,17,18]},{"name":"1 Timothy","abbr":"1Tim","verses":[20,15,16,16,25,21]},{"name":"2 Timothy","abbr":"2Tim","verses":[18,26,17,22]},{"name":"Titus","abbr":"Titus","verses":[16,15,15]},{"name":"Philemon","abbr":"Phlm","verses":[25]},{"name":"Hebrews","abbr":"Heb","verses":[14,18,19,16,14,20,28,13,28,39,40,29,25]},{"name":"James","abbr":"Jas","verses":[27,26,18,17,20]},{"name":"1 Peter","abbr":"1Pet","verses":[25,25,22,19,14]},{"name":"2 Peter","abbr":"2Pet","verses":[21,22,18]},{"name":"1 John","abbr":"1John","verses":[10,29,24,21,21]},{"name":"2 John","abbr":"2John","verses":[13]},{"name":"3 John","abbr":"3John","verses":[14]},{"name":"Jude","abbr":"Jude","verses":[25]},{"name":"Revelation","abbr":"Rev","verses":[20,29,22,11,14,17,17,13,21,11,19,17,18,20,8,21,18,24,21,15,27,21]}];
+const STRIDE = 7919n;
+const STORE = "pointer.shelf.v1";
+const LEGACY = "pointer.journal.v1";
+const ONBOARD = "pointer.onboard.v3";
+const WINDOW = 5;
+
+const verses = [];
+for (const book of BIBLE_INDEX) {
+  book.verses.forEach((count, i) => {
+    for (let v = 1; v <= count; v++) {
+      verses.push({ book: book.name, chapter: i + 1, verse: v, chapterLen: count });
+    }
+  });
+}
+const N = BigInt(verses.length);
+
+let frozen = null;
+let calCursor = new Date();
+let selectedDay = null;
+
+function show(id) {
+  document.querySelectorAll(".screen").forEach(s => s.classList.remove("on"));
+  document.getElementById("s-" + id).classList.add("on");
+}
+
+function spanFor(p) {
+  const end = Math.min(p.verse + WINDOW - 1, p.chapterLen);
+  return { start: p.verse, end };
+}
+
+function sample() {
+  const t = BigInt(Date.now());
+  const i = Number((t * STRIDE) % N);
+  return verses[i];
+}
+
+function emptyShelf() {
+  return { profiles: [], current: null, sittings: [] };
+}
+
+function loadShelf() {
+  try {
+    const raw = localStorage.getItem(STORE);
+    if (raw) return JSON.parse(raw);
+  } catch {}
+  const shelf = emptyShelf();
+  try {
+    const old = JSON.parse(localStorage.getItem(LEGACY) || "[]");
+    if (old.length) {
+      const id = "migrated";
+      shelf.profiles.push({ id, name: "Shelf" });
+      shelf.current = id;
+      shelf.sittings = old.map(e => Object.assign({}, e, { profileId: id }));
+    }
+  } catch {}
+  saveShelf(shelf);
+  return shelf;
+}
+
+function saveShelf(shelf) {
+  localStorage.setItem(STORE, JSON.stringify(shelf));
+}
+
+function currentProfile() {
+  const s = loadShelf();
+  return s.profiles.find(p => p.id === s.current) || null;
+}
+
+function mine() {
+  const s = loadShelf();
+  return s.sittings.filter(e => e.profileId === s.current);
+}
+
+function keyOf(e) {
+  return e.book + "|" + e.chapter + "|" + e.verse;
+}
+
+function persist(entry) {
+  const s = loadShelf();
+  const ix = s.sittings.findIndex(e => e.id === entry.id);
+  if (ix >= 0) s.sittings[ix] = entry;
+  else s.sittings.unshift(entry);
+  saveShelf(s);
+  refreshChrome();
+}
+
+function refreshChrome() {
+  const p = currentProfile();
+  document.getElementById("mark").textContent = p ? p.name : "";
+  const has = p && mine().length > 0;
+  document.getElementById("shelfBtn").hidden = !has;
+  document.getElementById("whoBtn").hidden = !p;
+}
+
+function renderProfiles() {
+  const s = loadShelf();
+  const root = document.getElementById("profileList");
+  root.innerHTML = s.profiles.map(p =>
+    "<button class='primary' type='button' data-open-profile='" + p.id + "'>" +
+    escapeHtml(p.name) + "</button>"
+  ).join("");
+}
+
+function openProfile(id) {
+  const s = loadShelf();
+  s.current = id;
+  saveShelf(s);
+  refreshChrome();
+  show("helperQ");
+}
+
+function freeze() {
+  const p = sample();
+  const span = spanFor(p);
+  const s = loadShelf();
+  const prior = s.sittings.filter(e =>
+    e.profileId === s.current &&
+    e.book === p.book && e.chapter === p.chapter && e.verse === p.verse
+  ).length;
+  frozen = {
+    id: String(Date.now()),
+    profileId: s.current,
+    book: p.book,
+    chapter: p.chapter,
+    verse: p.verse,
+    end: span.end,
+    at: new Date().toISOString(),
+    note: "",
+    prior
+  };
+  persist(frozen);
+  document.getElementById("heldRef").textContent = "The place is already fixed.";
+}
+
+function paintReveal() {
+  document.getElementById("refText").textContent =
+    frozen.book + " " + frozen.chapter + ":" + frozen.verse;
+  document.getElementById("spanText").textContent =
+    frozen.end === frozen.verse ? "" : ("Read through verse " + frozen.end);
+  document.getElementById("beenHere").hidden = !(frozen.prior > 0);
+  document.getElementById("note").value = frozen.note || "";
+  document.getElementById("webBox").hidden = true;
+  document.getElementById("webBox").innerHTML = "";
+}
+
+async function loadWeb() {
+  const box = document.getElementById("webBox");
+  box.hidden = false;
+  box.innerHTML = "<p class='cite'>World English Bible — public domain</p><p>Loading…</p>";
+  const q = encodeURIComponent(frozen.book + " " + frozen.chapter + ":" + frozen.verse +
+    (frozen.end !== frozen.verse ? "-" + frozen.end : ""));
+  try {
+    const res = await fetch("https://bible-api.com/" + q + "?translation=web");
+    if (!res.ok) throw new Error("lookup failed");
+    const data = await res.json();
+    const lines = (data.verses || []).map(v =>
+      "<p><strong>" + v.verse + "</strong> " + (v.text || "").trim() + "</p>"
+    ).join("");
+    box.innerHTML = "<p class='cite'>World English Bible — public domain</p>" +
+      (lines || "<p>" + (data.text || "").trim() + "</p>");
+  } catch (err) {
+    box.innerHTML = "<p class='cite'>World English Bible</p><p>The address still stands. The text could not be retrieved offline. Open the book when you can, or try again with a connection.</p>";
+  }
+}
+
+function escapeHtml(t) {
+  return String(t).replace(/[&<>]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
+}
+
+function entryCard(e) {
+  const when = new Date(e.at).toLocaleString();
+  const ref = e.book + " " + e.chapter + ":" + e.verse +
+    (e.end && e.end !== e.verse ? "–" + e.end : "");
+  const body = (e.note || "").trim()
+    ? "<p>" + escapeHtml(e.note) + "</p>"
+    : "<div class='empty'>No note written</div>";
+  return "<article class='entry'><strong>" + ref + "</strong><time>" + when +
+    "</time>" + body + "</article>";
+}
+
+function renderJournal() {
+  const p = currentProfile();
+  document.getElementById("shelfHint").textContent = p
+    ? ("Kept for " + p.name + ". These notes do not leave this device.")
+    : "These notes do not leave this device.";
+  const q = (document.getElementById("find").value || "").trim().toLowerCase();
+  const sort = document.getElementById("sortBy").value;
+  let all = mine().slice();
+  if (q) {
+    all = all.filter(e =>
+      (e.book + " " + e.chapter + ":" + e.verse + " " + (e.note || "")).toLowerCase().includes(q)
+    );
+  }
+  if (sort === "oldest") all.sort((a, b) => a.at.localeCompare(b.at));
+  else if (sort === "book") all.sort((a, b) =>
+    (a.book + a.chapter.toString().padStart(3,"0") + a.verse.toString().padStart(3,"0"))
+      .localeCompare(b.book + b.chapter.toString().padStart(3,"0") + b.verse.toString().padStart(3,"0"))
+      || b.at.localeCompare(a.at)
+  );
+  else all.sort((a, b) => b.at.localeCompare(a.at));
+  const root = document.getElementById("journal");
+  root.innerHTML = all.length ? all.map(entryCard).join("") : "<p class='hint'>Nothing matches.</p>";
+}
+
+function dayKey(iso) {
+  const d = new Date(iso);
+  return d.getFullYear() + "-" + String(d.getMonth()+1).padStart(2,"0") + "-" + String(d.getDate()).padStart(2,"0");
+}
+
+function renderCal() {
+  const y = calCursor.getFullYear();
+  const m = calCursor.getMonth();
+  document.getElementById("calTitle").textContent =
+    calCursor.toLocaleString(undefined, { month: "long", year: "numeric" });
+  const marked = new Set(mine().map(e => dayKey(e.at)));
+  const first = new Date(y, m, 1).getDay();
+  const last = new Date(y, m + 1, 0).getDate();
+  const dow = ["S","M","T","W","T","F","S"].map(d => "<span class='dow'>" + d + "</span>").join("");
+  let cells = "";
+  for (let i = 0; i < first; i++) cells += "<span></span>";
+  for (let d = 1; d <= last; d++) {
+    const key = y + "-" + String(m+1).padStart(2,"0") + "-" + String(d).padStart(2,"0");
+    if (marked.has(key)) {
+      cells += "<button type='button' class='has' data-day='" + key + "'>" + d + "</button>";
+    } else {
+      cells += "<span>" + d + "</span>";
+    }
+  }
+  document.getElementById("cal").innerHTML = dow + cells;
+  renderDay(selectedDay);
+}
+
+function renderDay(key) {
+  selectedDay = key;
+  const root = document.getElementById("dayList");
+  if (!key) {
+    root.innerHTML = "<p class='hint'>A marked day holds what was received then.</p>";
+    return;
+  }
+  const items = mine().filter(e => dayKey(e.at) === key);
+  root.innerHTML = items.length ? items.map(entryCard).join("") : "<p class='hint'>Nothing that day.</p>";
+}
+
+function afterIntro() {
+  localStorage.setItem(ONBOARD, "1");
+  const s = loadShelf();
+  if (!s.profiles.length) show("profileNew");
+  else {
+    renderProfiles();
+    show("profiles");
+  }
+}
+
+document.querySelector(".app").addEventListener("click", (ev) => {
+  const open = ev.target.closest("[data-open-profile]");
+  if (open) {
+    openProfile(open.getAttribute("data-open-profile"));
+    return;
+  }
+  const day = ev.target.closest("[data-day]");
+  if (day) {
+    renderDay(day.getAttribute("data-day"));
+    return;
+  }
+  const go = ev.target.closest("[data-go]");
+  if (!go) return;
+  const dest = go.getAttribute("data-go");
+  if (dest === "wait") {
+    show("wait");
+    setTimeout(() => show("cross"), 10000);
+    return;
+  }
+  if (dest === "reveal") {
+    paintReveal();
+    show("reveal");
+    return;
+  }
+  if (dest === "helperQ") {
+    frozen = null;
+    show("helperQ");
+    return;
+  }
+  if (dest === "profiles") {
+    renderProfiles();
+    show("profiles");
+    return;
+  }
+  show(dest);
+});
+
+document.getElementById("crossBtn").addEventListener("click", () => {
+  freeze();
+  show("confirm");
+});
+
+document.getElementById("needWeb").addEventListener("click", loadWeb);
+
+document.getElementById("saveNote").addEventListener("click", () => {
+  if (!frozen) return;
+  frozen.note = document.getElementById("note").value;
+  persist(frozen);
+  document.getElementById("saveNote").textContent = "Kept";
+  setTimeout(() => { document.getElementById("saveNote").textContent = "Keep these words"; }, 1200);
+});
+
+function wrapLines(ctx, text, maxWidth) {
+  const words = String(text).split(/\s+/).filter(Boolean);
+  const lines = [];
+  let line = "";
+  for (const w of words) {
+    const test = line ? line + " " + w : w;
+    if (ctx.measureText(test).width > maxWidth && line) {
+      lines.push(line);
+      line = w;
+    } else line = test;
+  }
+  if (line) lines.push(line);
+  return lines;
+}
+
+function fitBlock(ctx, text, maxWidth, maxHeight, minSize, maxSize) {
+  let lo = minSize, hi = maxSize, best = minSize, bestLines = [];
+  while (lo <= hi) {
+    const size = Math.floor((lo + hi) / 2);
+    ctx.font = size + "px Georgia, serif";
+    const lines = wrapLines(ctx, text, maxWidth);
+    const height = lines.length * size * 1.35;
+    if (height <= maxHeight && lines.length) {
+      best = size;
+      bestLines = lines;
+      lo = size + 1;
+    } else hi = size - 1;
+  }
+  ctx.font = best + "px Georgia, serif";
+  if (!bestLines.length) bestLines = wrapLines(ctx, text, maxWidth);
+  return { size: best, lines: bestLines, lineH: best * 1.35 };
+}
+
+async function scriptureForCard() {
+  const q = encodeURIComponent(frozen.book + " " + frozen.chapter + ":" + frozen.verse +
+    (frozen.end !== frozen.verse ? "-" + frozen.end : ""));
+  try {
+    const res = await fetch("https://bible-api.com/" + q + "?translation=web");
+    if (!res.ok) throw new Error("lookup failed");
+    const data = await res.json();
+    if (data.verses && data.verses.length) {
+      return data.verses.map(v => v.verse + "  " + (v.text || "").trim()).join("\n\n");
+    }
+    return (data.text || "").trim();
+  } catch {
+    return "";
+  }
+}
+
+async function saveCard() {
+  if (!frozen) return;
+  frozen.note = document.getElementById("note").value;
+  persist(frozen);
+  const passage = await scriptureForCard();
+  const note = (frozen.note || "").trim();
+  const w = 1080, h = 1350;
+  const c = document.createElement("canvas");
+  c.width = w;
+  c.height = h;
+  const ctx = c.getContext("2d");
+  ctx.fillStyle = "#12110f";
+  ctx.fillRect(0, 0, w, h);
+  ctx.fillStyle = "#d4b56a";
+  ctx.beginPath();
+  ctx.arc(w / 2, 88, 5, 0, Math.PI * 2);
+  ctx.fill();
+  const ref = frozen.book + " " + frozen.chapter + ":" + frozen.verse +
+    (frozen.end !== frozen.verse ? "–" + frozen.end : "");
+  ctx.fillStyle = "#e8e2d6";
+  ctx.textAlign = "center";
+  ctx.font = "56px Georgia, serif";
+  ctx.fillText(ref, w / 2, 170);
+  ctx.fillStyle = "#a89f8e";
+  ctx.font = "24px sans-serif";
+  const when = new Date(frozen.at).toLocaleDateString(undefined, {
+    year: "numeric", month: "long", day: "numeric"
+  });
+  ctx.fillText(when, w / 2, 214);
+  const footerY = h - 70;
+  const noteReserve = note ? 280 : 0;
+  const bodyTop = 270;
+  const bodyBottom = footerY - 36 - noteReserve;
+  ctx.textAlign = "left";
+  ctx.fillStyle = "#e8e2d6";
+  const body = passage || "Open this place in the Bible you have.";
+  const fitted = fitBlock(ctx, body.replace(/\n+/g, " "), w - 160, bodyBottom - bodyTop, 28, 52);
+  let y = bodyTop + fitted.size;
+  for (const line of fitted.lines) {
+    ctx.fillText(line, 80, y);
+    y += fitted.lineH;
+  }
+  if (note) {
+    ctx.strokeStyle = "rgba(232,226,214,.14)";
+    ctx.beginPath();
+    ctx.moveTo(80, bodyBottom + 24);
+    ctx.lineTo(w - 80, bodyBottom + 24);
+    ctx.stroke();
+    ctx.fillStyle = "#cfc6b6";
+    const nfit = fitBlock(ctx, note, w - 160, 220, 22, 32);
+    let ny = bodyBottom + 64;
+    for (const line of nfit.lines.slice(0, 6)) {
+      ctx.fillText(line, 80, ny);
+      ny += nfit.lineH;
+    }
+  }
+  ctx.textAlign = "center";
+  ctx.fillStyle = "#a89f8e";
+  ctx.font = "20px sans-serif";
+  ctx.fillText(passage ? "World English Bible  ·  for reading and reflection" : "For reading and reflection", w / 2, footerY);
+  const blob = await new Promise(res => c.toBlob(res, "image/png"));
+  const file = new File([blob], ref.replace(/\s+/g, "-") + ".png", { type: "image/png" });
+  if (navigator.canShare && navigator.canShare({ files: [file] })) {
+    try { await navigator.share({ files: [file], title: ref }); return; } catch {}
+  }
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = file.name;
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+
+document.getElementById("saveCard").addEventListener("click", saveCard);
+
+document.getElementById("shelfBtn").addEventListener("click", () => {
+  renderJournal();
+  renderCal();
+  show("notes");
+});
+
+document.getElementById("whoBtn").addEventListener("click", () => {
+  renderProfiles();
+  show("profiles");
+});
+
+document.getElementById("saveProfile").addEventListener("click", () => {
+  const name = (document.getElementById("newName").value || "").trim();
+  if (!name) return;
+  const s = loadShelf();
+  const id = String(Date.now());
+  s.profiles.push({ id, name });
+  s.current = id;
+  saveShelf(s);
+  document.getElementById("newName").value = "";
+  refreshChrome();
+  show("helperQ");
+});
+
+document.getElementById("find").addEventListener("input", renderJournal);
+document.getElementById("sortBy").addEventListener("change", renderJournal);
+document.getElementById("tabList").addEventListener("click", () => {
+  document.getElementById("listPane").hidden = false;
+  document.getElementById("calPane").hidden = true;
+});
+document.getElementById("tabCal").addEventListener("click", () => {
+  document.getElementById("listPane").hidden = true;
+  document.getElementById("calPane").hidden = false;
+  renderCal();
+});
+document.getElementById("prevMonth").addEventListener("click", () => {
+  calCursor.setMonth(calCursor.getMonth() - 1);
+  selectedDay = null;
+  renderCal();
+});
+document.getElementById("nextMonth").addEventListener("click", () => {
+  calCursor.setMonth(calCursor.getMonth() + 1);
+  selectedDay = null;
+  renderCal();
+});
+
+refreshChrome();
+
+if (localStorage.getItem(ONBOARD) === "1") {
+  const s = loadShelf();
+  if (s.current) show("helperQ");
+  else afterIntro();
+}
+
+document.getElementById("introContinue").addEventListener("click", afterIntro);
+
+if ("serviceWorker" in navigator) {
+  navigator.serviceWorker.register("sw.js").catch(() => {});
+}
+</script>
+</body>
+</html>
